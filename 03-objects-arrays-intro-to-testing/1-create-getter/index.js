@@ -4,21 +4,19 @@
  * @returns {function} - function-getter which allow get value from object by set path
  */
 export function createGetter(path) {
-  const propertyPath = path;
+  const propertyPathParts = path && path.length ? path.split('.') : [];
 
-  const getObjectProperty = (obj, propPath) => {
+  const getObjectProperty = (obj, pathsArray) => {
     let result;
 
-    if (obj && Object.keys(obj).length && propPath && propPath.length) {
-      if (!propPath.includes('.')) {
+    if (obj && Object.keys(obj).length && pathsArray.length) {
+      const [currentPath, ...restPathParts] = pathsArray;
+      if (pathsArray.length === 1) {
         // Если это последнее свойство,то возвращаем его
-        result = obj[propPath];
+        result = obj[currentPath];
       } else {
         // иначе берём объект-значение этого ключа и ищем в нём
-        const propPathParts = propPath.split('.');
-        const rootPath = propPathParts[0];
-        const childPath = propPath.replace(`${ rootPath }.`, '');
-        result = getObjectProperty(obj[rootPath], childPath);
+        result = getObjectProperty(obj[currentPath], restPathParts);
       }
     }
 
@@ -26,6 +24,6 @@ export function createGetter(path) {
   };
 
   return function (obj) {
-    return getObjectProperty(obj, propertyPath);
+    return getObjectProperty(obj, propertyPathParts);
   };
 }

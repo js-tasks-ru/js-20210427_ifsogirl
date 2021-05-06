@@ -12,21 +12,21 @@ export function trimSymbols(string, size) {
   let result = '';
 
   if (size > 0) {
-    for (let i = 0; i < string.length;) {
-      // запоминаем символ - будем считать кол-во повторений
-      const searchChar = string.charAt(i);
-      let sequenceLength = 0;
+    let searchChar = null;
+    let addedSymbolsCount = 0;
+    for (let i = 0; i < string.length; i++) {
+      const currentChar = string.charAt(i);
 
-      // пока следующие символы совпадают с нашим - увеличиваем счётчик
-      // и добавляем этот символ в результат, пока кол-во  меньше size
-      while (searchChar === string[i]) {
-        i++;
+      // если встретили другой символ  (отличный от сохранённого),
+      // то запоминаем его и обнуляем счётчик добавленных в другую строку таких же символов
+      if (searchChar !== currentChar) {
+        searchChar = currentChar;
+        addedSymbolsCount = 0;
+      }
 
-        if (sequenceLength < size) {
-          result += searchChar;
-        }
-
-        sequenceLength++;
+      if (addedSymbolsCount < size) {
+        result += currentChar;
+        addedSymbolsCount++;
       }
     }
   }
