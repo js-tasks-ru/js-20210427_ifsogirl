@@ -43,7 +43,7 @@ export default class ColumnChart {
     }
 
     const maxValue = Math.max(...this.data);
-    const scale = 50 / maxValue;
+    const scale = this.chartHeight / maxValue;
     return this.data.map(value => {
       const scaledValue = String(Math.floor(value * scale));
       const percentValue = `${ (value / maxValue * 100).toFixed(0) }%`;
@@ -88,7 +88,10 @@ export default class ColumnChart {
   }
 
   remove() {
-    this.element.remove();
+    if (this.element) {
+      this.element.remove();
+      this.element = null;
+    }
   }
 
   destroy() {
