@@ -2,11 +2,26 @@ export default class SortableTable {
   element = null;
   subElements = {};
 
+  onSortClick = (ev) => {
+    const targetFieldName = ev.currentTarget.dataset.id;
+    const isFieldCurrentlySorted = this.currentSort.fieldName === targetFieldName;
+    const sortOrder = isFieldCurrentlySorted && this.currentSort.order === 'desc' ? 'asc' : 'desc';
+
+    this.currentSort = sortOrder ? { fieldName: targetFieldName, order: sortOrder } : {};
+    if (this.isLocalSort) {
+      this.sortLocally();
+    } else {
+      this.sortOnServer();
+    }
+  };
+
   constructor(headersConfig, {
     data = [],
-    sorted = { id: '', order: '' }
+    sorted = { id: '', order: '' },
+    sortLocally = true
   } = {}) {
     this.headerConfig = headersConfig;
+    this.isLocalSort = sortLocally;
     const { id: sortFieldName, order: sortOrder } = sorted;
     this.currentSort = {
       fieldName: sortFieldName,
@@ -14,13 +29,13 @@ export default class SortableTable {
     };
 
     this.data = [...data];
-    this.originalData = [...data];
 
     if (sortFieldName) {
       this.sortData(sortFieldName, sortOrder);
     }
 
     this.render();
+    this.addEventListeners();
   }
 
   get headerTemplate() {
@@ -28,13 +43,10 @@ export default class SortableTable {
     return this.headerConfig.map(({ id, title, sortable, sortType }) => {
       const isColumnSorted = fieldName === id;
       return `<div class='sortable-table__cell' data-sortable='${ sortable }' data-id='${ id }' data-order='${ isColumnSorted ? order : '' }'>
-      <span>${ title }</span>
-        ${ isColumnSorted ? `<span
-        data-element='arrow'
-        class='sortable-table__sort-arrow'
-      >
-        <span class='sort-arrow'></span>
-      </span>` : '' }
+            <span>${ title }</span>
+            <span data-element='arrow' class='sortable-table__sort-arrow'>
+                <span class='sort-arrow'></span>
+           </span>
       </div>`;
     }).join('');
   }
@@ -61,11 +73,28 @@ export default class SortableTable {
       </div>`;
   }
 
-  updateRows() {
-    this.subElements.header.innerHTML = this.headerTemplate;
-    this.subElements.body.innerHTML = this.rowsTemplate;
+  updateHeaders() {
+    const { fieldName, order } = this.currentSort;
+    const headerCells = this.element.querySelectorAll('.sortable-table__cell[data-id]');
+    const currentSortedHeader = this.element.querySelector(`.sortable-table__cell[data-id="${ fieldName }"]`);
+    headerCells.forEach(column => {
+      column.dataset.order = '';
+    });
 
-    this.addEventListeners();
+    currentSortedHeader.dataset.order = order;
+  }
+
+  sortLocally() {
+    const { fieldName, order } = this.currentSort;
+    this.sortData(fieldName, order);
+
+    //перерисовываем body
+    this.subElements.body.innerHTML = this.rowsTemplate;
+    this.updateHeaders();
+  }
+
+  sortOnServer() {
+    console.log('Server sort');
   }
 
   sortData(fieldName, order) {
@@ -84,28 +113,12 @@ export default class SortableTable {
     });
   }
 
-  sort = (ev) => {
-    const targetFieldName = ev.currentTarget.dataset.id;
-    const isFieldCurrentlySorted = this.currentSort.fieldName === targetFieldName;
-    const sortOrder = isFieldCurrentlySorted && this.currentSort.order === 'desc' ? 'asc' : 'desc';
-    this.currentSort = sortOrder ? { fieldName: targetFieldName, order: sortOrder } : {};
-    this.sortData(targetFieldName, sortOrder);
-    this.updateRows();
-  };
-
   addEventListeners() {
     const headerCells = this.subElements.header.querySelectorAll('.sortable-table__cell');
     headerCells.forEach(headerCell => {
       if (headerCell.dataset.sortable) {
-        headerCell.addEventListener('pointerdown', this.sort);
+        headerCell.addEventListener('pointerdown', this.onSortClick);
       }
-    });
-  }
-
-  removeEventListeners() {
-    const headerCells = this.subElements.header.querySelectorAll('.sortable-table__cell');
-    headerCells.forEach(headerCell => {
-      headerCell.removeEventListener('pointerdown', this.sort);
     });
   }
 
@@ -119,8 +132,13 @@ export default class SortableTable {
     tableComponents.forEach(component => {
       this.subElements[component.dataset.element] = component;
     });
+  }
 
-    this.addEventListeners();
+  removeEventListeners() {
+    const headerCells = this.subElements.header.querySelectorAll('.sortable-table__cell');
+    headerCells.forEach(headerCell => {
+      headerCell.removeEventListener('pointerdown', this.onSortClick);
+    });
   }
 
   destroy() {
