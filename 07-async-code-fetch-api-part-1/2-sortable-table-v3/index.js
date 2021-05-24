@@ -16,14 +16,13 @@ export default class SortableTable {
   isLoading = false;
 
   onSortClick = (ev) => {
-    const targetColumnNode = ev.target.closest('[data-sortable="true"]');
-    console.log('Node', targetColumnNode);
-    if (targetColumnNode) {
-      const { id: sortFieldName } = targetColumnNode.dataset;
+    const targetColumn = ev.target.closest('[data-sortable="true"]');
+    if (targetColumn) {
+      const { id: sortFieldName } = targetColumn.dataset;
       const isFieldCurrentlySorted = this.currentSort.fieldName === sortFieldName;
       const sortOrder = isFieldCurrentlySorted && this.currentSort.order === 'desc' ? 'asc' : 'desc';
 
-      this.currentSort = sortOrder ? { fieldName: sortFieldName, order: sortOrder } : {};
+      this.currentSort = { fieldName: sortFieldName, order: sortOrder };
       if (this.isLocalSort) {
         this.sortOnClient(sortFieldName, sortOrder);
       } else {
@@ -35,8 +34,9 @@ export default class SortableTable {
 
   onTableScroll = (ev) => {
     if (!this.isLoading && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight) {
-      //your logic or function
       this.pageNumber++;
+      //reset: false для того, чтобы не перерисовывать body полностью (как при локальной сортировке)
+      // а просто добавить новые строки в конеу
       this.loadTableData({ reset: false });
     }
   };
@@ -50,19 +50,17 @@ export default class SortableTable {
     this.url = url;
     this.isLocalSort = isSortLocally;
     this.data = [...data];
+    this.pageNumber = 0;
 
     this.headerConfig = headersConfig;
 
     const { id: sortFieldName, order: sortOrder } = sorted;
-    this.currentSort = {
+    this.currentSort = sortFieldName ? {
       fieldName: sortFieldName,
       order: sortOrder
-    };
-
-    this.pageNumber = 0;
+    } : {};
 
     this.render();
-    this.addEventListeners();
   }
 
   isEmptyData = () => !this.isLoading && !this.data.length;
@@ -124,13 +122,7 @@ export default class SortableTable {
       </div>`;
   }
 
-  updateTable() {
-    if (this.isEmptyData()) {
-      this.element.classList.add('sortable-table_empty');
-    }
-  }
-
-  sortData(fieldName, order) {
+  sortLocalData(fieldName, order) {
     const fieldConfig = this.headerConfig.find(({ id }) => id === fieldName);
     if (fieldConfig && fieldConfig.sortable) {
       const multiplier = order === 'desc' ? -1 : 1;
@@ -187,12 +179,12 @@ export default class SortableTable {
 
         this.isLoading = false;
         if (this.isLocalSort) {
-          // при локальной сортировке всё перерисуется за нас
+          // при локальной сортировке перерисовываем body целиком
           if (this.currentSort.fieldName) {
-            const {fieldName, order} = this.currentSort;
+            const { fieldName, order } = this.currentSort;
             this.sortOnClient(fieldName, order);
-          }
-          else {
+          } else {
+            //иначе, есл сортировки нет, просто аппендим новые строки в конец
             this.appendRows(data);
           }
         } else {
@@ -219,6 +211,7 @@ export default class SortableTable {
       this.subElements[component.dataset.element] = component;
     });
 
+    this.addEventListeners();
     return this.loadTableData({ reset: true });
   }
 
@@ -238,7 +231,7 @@ export default class SortableTable {
 
   sortOnClient(fieldName, order) {
     console.log('%cSort on client', 'color: blue');
-    this.sortData(fieldName, order);
+    this.sortLocalData(fieldName, order);
 
     //перерисовываем body
     this.subElements.body.innerHTML = this.rowsTemplate;
