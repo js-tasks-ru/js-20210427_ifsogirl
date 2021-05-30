@@ -234,6 +234,11 @@ describe('forms-fetch-api-part-2/range-picker', () => {
       bubbles: true
     }));
 
+    //добавила ещё один клинк на инпут, чтобы календарь показался и можно было проверить выбранные даты
+    input.dispatchEvent(new MouseEvent('click', {
+      bubbles: true
+    }));
+
     from = rangePicker.element.querySelector('.rangepicker__selected-from');
     to = rangePicker.element.querySelector('.rangepicker__selected-to');
 
