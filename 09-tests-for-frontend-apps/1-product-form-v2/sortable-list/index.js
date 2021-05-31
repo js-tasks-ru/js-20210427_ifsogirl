@@ -1,5 +1,7 @@
 function getRandomColor() {
-  return `#${ Math.floor(Math.random() * 16777215).toString(16) }`;
+  return "hsl(" + 360 * Math.random() + ',' +
+    (25 + 70 * Math.random()) + '%,' +
+    (85 + 10 * Math.random()) + '%)'
 }
 
 export default class SortableList {
@@ -24,13 +26,13 @@ export default class SortableList {
 
     this.currentItem.classList.add('sortable-list__item_dragging');
     this.currentItem.style.width = `${ width }px`;
-    this.moveTarget(ev.pageX, ev.pageY);
+    this.moveTarget(ev.clientX, ev.clientY);
 
     document.addEventListener('mousemove', this.onMouseMove);
   };
 
   onMouseMove = (ev) => {
-    this.moveTarget(ev.pageX, ev.pageY);
+    this.moveTarget(ev.clientX, ev.clientY);
     const firstItem = this.element.firstElementChild;
 
     this.currentItem.hidden = true;
