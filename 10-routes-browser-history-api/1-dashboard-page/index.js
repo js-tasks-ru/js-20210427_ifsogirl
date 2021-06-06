@@ -37,31 +37,23 @@ export default class Page {
       range: initialDates
     });
 
-    this.components.ordersChart.element.classList.add('dashboard__chart_orders');
-
     this.components.salesChart = new ColumnChart({
       label: 'Продажи',
       url: 'api/dashboard/sales',
       range: initialDates,
       formatHeading: (total) => formatter.format(total)
     });
-    this.components.salesChart.element.classList.add('dashboard__chart_sales');
 
     this.components.customersChart = new ColumnChart({
       label: 'Заказы',
       url: 'api/dashboard/customers',
       range: initialDates
     });
-    this.components.customersChart.element.classList.add('dashboard__chart_customers');
 
     this.components.sortableTable = new SortableTable(header, {
       url: '/api/dashboard/bestsellers',
       isSortLocally: true,
       range: [initialDates.from, initialDates.to]
-    });
-
-    Object.keys(this.components).forEach(componentName => {
-      this.subElements[componentName] = this.components[componentName].element;
     });
   }
 
@@ -73,29 +65,46 @@ export default class Page {
     return this.components.sortableTable.loadDataByRange(from, to);
   }
 
+  get template(){
+    return `<div class='dashboard'>
+    <div class='content__top-panel'>
+    <h2 class='page-title'>Панель управления</h2>
+    <div data-element="rangePicker"></div>
+    </div>
+      <div class='dashboard__charts'>
+        <div data-element="ordersChart" class="dashboard__chart_orders"></div>
+        <div data-element="salesChart" class="dashboard__chart_sales"></div>
+        <div data-element="customersChart" class="dashboard__chart_customers"></div>
+      </div>
+            <h3 class="block-title">Лидеры продаж</h3>
+      <div data-element="sortableTable">
+      </div>
+    </div>`
+  }
+  getSubElements () {
+    const elements = this.element.querySelectorAll('[data-element]');
+
+    return [...elements].reduce((accum, subElement) => {
+      accum[subElement.dataset.element] = subElement;
+
+      return accum;
+    }, {});
+  }
+
   async render() {
     this.createComponents();
     const container = document.createElement('div');
 
-    container.innerHTML = `<div class='dashboard'>
-    <div class='content__top-panel'><h2 class='page-title'>Панель управления</h2></div>
-      <div class='dashboard__charts'>
-      </div>
-    </div>`;
-
+    container.innerHTML = this.template;
     this.element = container.firstElementChild;
-    const headerContainer = this.element.querySelector('.content__top-panel');
-    headerContainer.append(this.subElements.rangePicker);
+    this.subElements = this.getSubElements();
 
-    const chartsContainer = this.element.querySelector('.dashboard__charts');
 
-    chartsContainer.append(this.subElements.ordersChart);
-    chartsContainer.append(this.subElements.salesChart);
-    chartsContainer.append(this.subElements.customersChart);
+    Object.keys(this.subElements).forEach(componentName => {
+      this.subElements[componentName].append(this.components[componentName].element);
+    });
 
-    this.element.append(this.subElements.sortableTable);
     this.element.addEventListener('date-select', this.onDateChange);
-    // await this.loadData(monthAgo, today);
 
     return this.element;
   }
