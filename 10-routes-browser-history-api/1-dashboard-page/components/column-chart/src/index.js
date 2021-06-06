@@ -53,7 +53,6 @@ export default class ColumnChart {
     const data = await fetchJson(this.url);
 
     this.setNewRange(from, to);
-
     if (data && Object.values(data).length) {
       this.subElements.header.textContent = this.getHeaderValue(data);
       this.subElements.body.innerHTML = this.getColumnBody(data);
